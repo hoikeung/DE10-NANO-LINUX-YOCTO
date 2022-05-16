@@ -4,10 +4,11 @@ To build embedded linux for DE10-NANO using Yocto with xfce and frame buffer in 
 ### Step
 
 #### Build environment preparation
-1. Download toolchain
-wget https://developer.arm.com/-/media/Files/downloads/gnu/11.2-2022.02/binrel/gcc-arm-11.2-2022.02-x86_64-arm-none-linux-gnueabihf.tar.xz
+1. Download toolchain	
+```wget https://developer.arm.com/-/media/Files/downloads/gnu/11.2-2022.02/binrel/gcc-arm-11.2-2022.02-x86_64-arm-none-linux-gnueabihf.tar.xz
 tar xf gcc-arm-11.2-2022.02-x86_64-arm-none-linux-gnueabihf.tar.xz
 rm gcc-arm-11.2-2022.02-x86_64-arm-none-linux-gnueabihf.tar.xz
+```
 
 2. Setup toolchain path
 export PATH=`pwd`/gcc-arm-11.2-2022.02-x86_64-arm-none-linux-gnueabihf/bin:$PATH
