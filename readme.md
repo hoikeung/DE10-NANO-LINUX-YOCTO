@@ -12,13 +12,16 @@ rm gcc-arm-11.2-2022.02-x86_64-arm-none-linux-gnueabihf.tar.xz
 ```
 
 2. Setup toolchain path
+```
 export PATH=`pwd`/gcc-arm-11.2-2022.02-x86_64-arm-none-linux-gnueabihf/bin:$PATH
 export CROSS_COMPILE=arm-none-linux-gnueabihf-
 export ARCH=arm
+```
 
 #### Compile FPGA and SoC
 3. copy components/clocked_video_output and components/frame_reader to Quartus's ip/altera folder
 4. add the following above </library> to ip/altera/altera_components.ipx
+```
   <component
    name="alt_vip_vfr"
    file="frame_reader/full_ip/frame_reader/alt_vip_vfr_hw.tcl"
@@ -68,32 +71,46 @@ export ARCH=arm
    factory="PresetFactory">
   <tag2 key="PRESET_TYPE" value="alt_vip_itc" />
  </plugin>
+```
 5. compile qsys and the project using Quartus
-6. convert generated .sof file to .rbf file
-go to output_files folder
+6. go to output_files folder, convert generated .sof file to .rbf file
+```
 sudo ~/intelFPGA_lite/21.1/quartus/bin/quartus_cpf -c -o bitstream_compression=on --configuration_mode=FPP DE10_NANO_SOC_FB.sof soc_system.rbf
+```
 
 #### Build bootloader
 7. go to the project folder
 8. make folder for bootloader
+```
 mkdir -p software/bootloader
+```
 9. build hps setting
+```
 ~/intelFPGA/20.1/embedded/embedded_command_shell.sh \
 bsp-create-settings \
    --type spl \
    --bsp-dir software/bootloader \
    --preloader-settings-dir "hps_isw_handoff/soc_system_hps_0" \
    --settings software/bootloader/settings.bsp
+```
 10. go to bootloader folder and donwnload U-Boot
+```
 cd software/bootloader
 git clone https://github.com/altera-opensource/u-boot-socfpga
 cd u-boot-socfpga
+```
 11. open configs/socfpga_de10_nano_defconfig with text editor
 12. change the following
+```
 CONFIG_USE_BOOTCOMMAND=y
 add CONFIG_BOOTCOMMAND="run fatscript;bridge enable; run distro_bootcmd"
+```
 13. run the qts_filter
+```
 ./arch/arm/mach-socfpga/qts-filter.sh cyclone5 ../../../ ../ ./board/altera/cyclone5-socdk/qts/
-14. make
+```
+14. compile u-boot
+```
 make socfpga_de10_nano_defconfig
 make -j 48
+```
