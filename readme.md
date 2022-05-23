@@ -1,5 +1,9 @@
 ### Introduction
 To build embedded linux for DE10-NANO using Yocto with xfce and frame buffer in Quartus 21.1
+Requirement:
+Quartus 21.1
+Intel EDS 20.1	
+DE10_NANO_SoC_FB	
 
 ### Step
 
@@ -113,4 +117,73 @@ add CONFIG_BOOTCOMMAND="run fatscript;bridge enable; run distro_bootcmd"
 ```
 make socfpga_de10_nano_defconfig
 make -j 48
+```
+
+#### Build Linux kernel
+15. clone the kernel
+```
+git clone https://github.com/altera-opensource/linux-socfpga
+```
+16. go to linux-socfpga/arch/arm/boot/dts/ folder, add the follow to socfpga_cyclone5_de0_nano_soc.dts
+```
+&base_fpga_region {
+        ranges =  <0x00000000 0xff200000 0x00200000>;
+
+        alt_vip_vfr_hdmi: vip@0x100031000 {
+        compatible = "ALTR,vip-frame-reader-14.0", "ALTR,vip-frame-reader-9.1";
+        reg = <0x00031000 0x00000080>;
+        max-width = <1024>;
+        max-height = <768>;
+        bits-per-color = <8>;
+        colors-per-beat = <4>;
+        beats-per-pixel = <1>;
+        mem-word-width = <128>;
+    };
+};
+```
+17. copy components/altvipfb.c to linux-socfpga/drivers/video/fbdev/
+18. edit altvipfb.c line 220
+```
+- fbmem_virt = dma_alloc_coherent(NULL,
++ fbmem_virt = dma_alloc_coherent(&pdev->dev,
+```
+19. add the following to altvipfb.c line 177
+```
+info->var.pixclock = 6734;
+info->var.left_margin = 148;
+info->var.right_margin = 88;
+info->var.upper_margin = 36;
+info->var.lower_margin = 4;
+info->var.hsync_len = 44;
+info->var.vsync_len = 5;
+```
+20. add the following to line 14 of linux-socfpga/drivers/video/fbdev/Makefile
+```
+obj-$(CONFIG_FB_ALTERA_VIP_FB) += altvipfb.o
+altvipfb_drv-objs := altvipfb.o
+```
+21. add the following to line 222 of linux-socfpga/drivers/video/fbdev/Kconfig
+```
+config FB_ALTERA_VIP_FB
+    tristate "Altera VIP Frame Buffer framebuffer support"
+    depends on FB
+    select FB_CFB_FILLRECT
+    select FB_CFB_COPYAREA
+    select FB_CFB_IMAGEBLIT
+    help
+      This driver supports the Altera Video and Image Processing(VIP)
+      Frame Buffer. This core driver only supports Arria 10 HW and newer
+      families of FPGA
+```
+22. add the following to line 121 of linux-socfpga/arch/arm/configs/socfpga_defconfig
+```
+CONFIG_FB_ALTERA_VIP_FB=y
+```
+23. compile the kernel at linux-socfpga folder
+```
+make socfpga_defconfig
+make -j 48 zImage Image dtbs modules
+make -j 48 modules_install INSTALL_MOD_PATH=modules_install
+rm -rf modules_install/lib/modules/*/build
+rm -rf modules_install/lib/modules/*/source
 ```
