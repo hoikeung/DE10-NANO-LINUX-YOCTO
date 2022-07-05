@@ -1,9 +1,9 @@
 ### Introduction
-To build embedded linux for DE10-NANO using Yocto with xfce and frame buffer in Quartus 21.1
-Requirement:
-Quartus 21.1	
-Intel EDS 20.1	
-DE10_NANO_SoC_FB	
+To build embedded linux for DE10-NANO using Yocto with xfce and frame buffer in Quartus 21.1  
+Requirement:  
+Quartus 21.1	  
+Intel EDS 20.1	  
+DE10_NANO_SoC_FB	  
 
 ### Step
 
