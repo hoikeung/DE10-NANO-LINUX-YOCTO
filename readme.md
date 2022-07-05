@@ -1,7 +1,7 @@
 ### Introduction
 To build embedded linux for DE10-NANO using Yocto with xfce and frame buffer in Quartus 21.1
 Requirement:
-Quartus 21.1
+Quartus 21.1	
 Intel EDS 20.1	
 DE10_NANO_SoC_FB	
 
@@ -187,3 +187,102 @@ make -j 48 modules_install INSTALL_MOD_PATH=modules_install
 rm -rf modules_install/lib/modules/*/build
 rm -rf modules_install/lib/modules/*/source
 ```
+
+#### Build Yocto
+24. make a folder for Yocto
+```
+mkdir yocto && cd yocto
+```
+25. clone the files system
+```
+git clone -b honister https://git.yoctoproject.org/poky
+git clone -b honister https://git.yoctoproject.org/meta-intel-fpga
+git clone -b honister https://git.openembedded.org/meta-openembedded
+git clone -b honister https://github.com/altera-opensource/meta-intel-fpga-refdes
+```
+26. change build version of LAYERSERIES_COMPAT_meta-intel-fpga-refdes at meta-intel-fpga-refdes/conf/layer.conf
+```
+LAYERSERIES_COMPAT_meta-intel-fpga-refdes = "master honister"
+```
+27. initialize the build environment
+```
+source poky/oe-init-build-env ./build
+```
+28. set build machine
+```
+source poky/oe-init-build-env ./build
+```
+29. Use systemd
+```
+echo 'DISTRO_FEATURES_append = " systemd"' >> conf/local.conf
+echo 'VIRTUAL-RUNTIME_init_manager = "systemd"' >> conf/local.conf
+```
+30. Build additional rootfs type
+```
+echo 'IMAGE_FSTYPES += "tar.gz"' >> conf/local.conf
+```
+31. Ensure we build in all kernel-modules
+```
+echo "MACHINE_ESSENTIAL_EXTRA_RRECOMMENDS += \"kernel-modules\"" >> conf/local.conf
+```
+32. bblayer setting
+```
+echo 'BBLAYERS += " ${TOPDIR}/../meta-intel-fpga "' >> conf/bblayers.conf
+echo 'BBLAYERS += " ${TOPDIR}/../meta-intel-fpga-refdes "' >> conf/bblayers.conf
+echo 'BBLAYERS += " ${TOPDIR}/../meta-openembedded/meta-oe "' >> conf/bblayers.conf
+echo 'BBLAYERS += " ${TOPDIR}/../meta-openembedded/meta-networking "' >> conf/bblayers.conf
+echo 'BBLAYERS += " ${TOPDIR}/../meta-openembedded/meta-python "' >> conf/bblayers.conf
+echo 'BBLAYERS += " ${TOPDIR}/../meta-openembedded/meta-xfce "' >> conf/bblayers.conf
+echo 'BBLAYERS += " ${TOPDIR}/../meta-openembedded/meta-gnome "' >> conf/bblayers.conf
+echo 'BBLAYERS += " ${TOPDIR}/../meta-openembedded/meta-multimedia "' >> conf/bblayers.conf
+```
+33. build rootfs image
+```
+bitbake  core-image-minimal-xfce
+```
+
+#### Make SD card image
+34. make a folder for sd card image
+```
+mkdir sd_card && cd sd_card
+```
+45. download make_sdimage_p3.py
+```
+wget https://releases.rocketboards.org/release/2020.05/gsrd/tools/make_sdimage_p3.py
+chmod +x make_sdimage_p3.py
+```
+46. Copy u-boot file to sd_card folder
+```
+cp ~/de10-nano-yocto-xfce/DE10_NANO_SoC_FB/software/bootloader/u-boot-socfpga/u-boot-with-spl.sfp .
+```
+47. copy linux image to sd card folder
+```
+mkdir fat && cd fat
+cp ~/de10-nano-yocto-xfce/linux-socfpga/arch/arm/boot/zImage .
+cp ~/de10-nano-yocto-xfce/linux-socfpga/arch/arm/boot/dts/socfpga_cyclone5_de0_nano_soc.dtb ./socfpga_cyclone5_de10_nano.dtb
+cp ~/de10-nano-yocto-xfce/DE10_NANO_SoC_FB/output_files/soc_system.rbf .
+cp ~/de10-nano-yocto-xfce/components/u-boot.scr .
+cp -r ~/de10-nano-yocto-xfce/components/extlinux .
+```
+48. copy kernel and yocto to sdcard folder
+```
+mkdir rootfs && cd rootfs
+sudo tar xf ~/de10-nano-yocto-xfce/yocto/build/tmp/deploy/images/cyclone5/core-image-minimal-xfce-cyclone5.tar.gz
+sudo rm -rf lib/modules/*
+sudo cp -r ~/de10-nano-yocto-xfce/linux-socfpga/modules_install/lib/modules/* lib/modules/
+```
+49. build SD card image
+```
+sudo python3 make_sdimage_p3.py -f \
+-P u-boot-with-spl.sfp,num=3,format=raw,size=10M,type=A2 \
+-P rootfs/*,num=2,format=ext2,size=1500M \
+-P fat/*,num=1,format=fat32,size=500M -s 2G \
+-n sdcard.img
+```
+50. insert SD card and burn SD card image
+```
+sudo umount /dev/sdc*
+sudo dd  bs=4M  conv=sync  if=sdcard.img  of=/dev/sdc
+```
+51. done
+
